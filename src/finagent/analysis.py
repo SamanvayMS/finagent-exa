@@ -103,10 +103,12 @@ def synthesize_impact(
     ticker: str,
     company_name: str | None,
     news_items: list[NewsItem],
+    system_prompt: str | None = None,
 ) -> tuple[Impact, list[Citation]]:
     if not news_items:
         return _neutral(f"No recent news found for {ticker} in the selected window."), []
 
+    prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else IMPACT_SYSTEM_PROMPT
     name = company_name or ticker
     query = (
         f"How does the latest news about {name} ({ticker}), its subsidiaries, and its "
@@ -116,7 +118,7 @@ def synthesize_impact(
         query,
         stage="synthesis",
         type="deep",
-        system_prompt=IMPACT_SYSTEM_PROMPT,
+        system_prompt=prompt,
         output_schema=IMPACT_SCHEMA,
         contents={"highlights": True},
     )

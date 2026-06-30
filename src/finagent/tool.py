@@ -35,6 +35,10 @@ TOOL_PARAMETERS: dict = {
             "type": "boolean",
             "description": "Whether to include competitor news (default true)",
         },
+        "system_prompt": {
+            "type": "string",
+            "description": "Optional override for the analyst system prompt that frames the impact synthesis",
+        },
     },
     "required": ["ticker"],
 }

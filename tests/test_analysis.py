@@ -48,6 +48,33 @@ def test_synthesize_maps_impact_and_citations():
     assert client.last_kwargs["output_schema"] is IMPACT_SCHEMA
 
 
+def test_default_system_prompt_used():
+    from finagent.analysis import IMPACT_SYSTEM_PROMPT
+
+    client = StubClient()
+    news = [NewsItem(title="t", url="https://x", source_entity="AAPL")]
+    synthesize_impact(client, "AAPL", "Apple Inc.", news)
+    assert client.last_kwargs["system_prompt"] == IMPACT_SYSTEM_PROMPT
+
+
+def test_system_prompt_override_passed_through():
+    client = StubClient()
+    news = [NewsItem(title="t", url="https://x", source_entity="AAPL")]
+    synthesize_impact(
+        client, "AAPL", "Apple Inc.", news, system_prompt="Be extra skeptical."
+    )
+    assert client.last_kwargs["system_prompt"] == "Be extra skeptical."
+
+
+def test_blank_system_prompt_falls_back_to_default():
+    from finagent.analysis import IMPACT_SYSTEM_PROMPT
+
+    client = StubClient()
+    news = [NewsItem(title="t", url="https://x", source_entity="AAPL")]
+    synthesize_impact(client, "AAPL", "Apple Inc.", news, system_prompt="   ")
+    assert client.last_kwargs["system_prompt"] == IMPACT_SYSTEM_PROMPT
+
+
 def test_no_news_returns_neutral_without_calling_exa():
     client = StubClient()
     impact, citations = synthesize_impact(client, "AAPL", "Apple Inc.", [])
