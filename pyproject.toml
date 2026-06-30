@@ -1,0 +1,26 @@
+[project]
+name = "finagent"
+version = "0.1.0"
+description = "Ticker impact-analysis tool library powered by Exa web search"
+requires-python = ">=3.12"
+dependencies = [
+    "exa-py==2.14.0",
+    "pydantic>=2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+finagent = "finagent.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/finagent"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
