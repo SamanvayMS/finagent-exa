@@ -10,6 +10,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+web = ["flask>=3"]
 
 [project.scripts]
 finagent = "finagent.__main__:main"

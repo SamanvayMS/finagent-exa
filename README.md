@@ -37,6 +37,21 @@ Key arguments (all optional except `ticker`): `recency_hours` (default 24),
 python -m finagent AAPL --recency-hours 24
 ```
 
+## Local web UI
+
+A small Flask frontend (ticker form → rendered report, with an editable analyst
+system prompt) for trying it locally:
+
+```bash
+uv pip install -e ".[dev,web]"
+export EXA_API_KEY=...
+uv run python app.py          # then open http://127.0.0.1:5000
+```
+
+Enter a ticker, tune recency / results / coverage, optionally customize the
+system prompt, and the page renders the sentiment verdict, impact drivers,
+discovered subsidiaries & competitors, the news wire, and grounded citations.
+
 ## Use as an agent tool
 
 ```python

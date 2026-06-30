@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FINAGENT · ticker impact desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Newsreader:ital,opsz@0,6..72;1,6..72&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0b0d0c;
+    --ink-2: #111513;
+    --surface: #161b18;
+    --surface-2: #1d2420;
+    --line: #2c3530;
+    --paper: #ece6d6;
+    --paper-dim: #b8b29f;
+    --muted: #7d8478;
+    --bull: #57d96a;
+    --bear: #f0584a;
+    --neutral: #e0a829;
+    --amber: #d4a72c;
+    --serif: "Fraunces", Georgia, serif;
+    --body: "Newsreader", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgba(212,167,44,0.07), transparent 55%),
+      radial-gradient(100% 90% at 0% 100%, rgba(87,217,106,0.05), transparent 50%),
+      var(--ink);
+    color: var(--paper);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* film grain */
+  body::after {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    opacity: 0.035; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 28px 120px; }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    border-bottom: 3px double var(--line);
+    padding: 40px 0 18px;
+    margin-bottom: 34px;
+    position: relative;
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--amber);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .kicker .live::before {
+    content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--bull); margin-right: 7px; vertical-align: middle;
+    box-shadow: 0 0 0 0 rgba(87,217,106,0.6); animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(87,217,106,0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(87,217,106,0); }
+    100% { box-shadow: 0 0 0 0 rgba(87,217,106,0); }
+  }
+  h1.title {
+    font-family: var(--serif); font-weight: 900;
+    font-size: clamp(48px, 9vw, 104px); line-height: 0.92;
+    letter-spacing: -0.03em; margin: 14px 0 6px;
+    font-optical-sizing: auto;
+  }
+  h1.title .ave { color: var(--amber); font-style: italic; font-weight: 600; }
+  .dek {
+    font-family: var(--body); font-style: italic; font-size: 20px;
+    color: var(--paper-dim); max-width: 60ch;
+  }
+
+  /* ---------- query desk ---------- */
+  .desk {
+    background: linear-gradient(180deg, var(--surface), var(--ink-2));
+    border: 1px solid var(--line); border-radius: 4px;
+    padding: 26px 26px 22px;
+    box-shadow: 0 24px 60px -30px rgba(0,0,0,0.8);
+    position: relative; overflow: hidden;
+  }
+  .desk::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--bull), var(--amber), var(--bear));
+    opacity: 0.8;
+  }
+  .desk-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.3em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+  }
+  .ticker-row { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
+  .ticker-field { flex: 1 1 240px; position: relative; }
+  .ticker-field .hash {
+    position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+    font-family: var(--serif); font-weight: 900; font-size: 34px; color: var(--line);
+    pointer-events: none;
+  }
+  input#ticker {
+    width: 100%; background: var(--ink); border: 1px solid var(--line);
+    border-radius: 3px; color: var(--paper);
+    font-family: var(--mono); font-weight: 600; font-size: 34px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 14px 18px 14px 52px; outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  input#ticker::placeholder { color: var(--line); letter-spacing: 0.08em; }
+  input#ticker:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(212,167,44,0.12); }
+
+  button#run {
+    flex: 0 0 auto; background: var(--amber); color: #1a1405;
+    border: none; border-radius: 3px; cursor: pointer;
+    font-family: var(--mono); font-weight: 600; font-size: 15px;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 0 34px;
+    transition: transform .12s ease, background .2s, box-shadow .2s;
+    box-shadow: 0 8px 24px -10px rgba(212,167,44,0.6);
+  }
+  button#run:hover { background: #e8b73a; transform: translateY(-1px); }
+  button#run:active { transform: translateY(0); }
+  button#run:disabled { opacity: 0.5; cursor: wait; transform: none; }
+
+  .controls {
+    display: flex; gap: 26px; flex-wrap: wrap; align-items: center;
+    margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line);
+  }
+  .ctl { display: flex; flex-direction: column; gap: 5px; }
+  .ctl label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .ctl input[type="number"] {
+    width: 92px; background: var(--ink); border: 1px solid var(--line);
+    color: var(--paper); font-family: var(--mono); font-size: 15px;
+    padding: 8px 10px; border-radius: 3px; outline: none;
+  }
+  .ctl input[type="number"]:focus { border-color: var(--amber); }
+  .toggles { display: flex; gap: 20px; }
+  .switch { display: flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; }
+  .switch input { display: none; }
+  .switch .track {
+    width: 38px; height: 20px; border-radius: 20px; background: var(--line);
+    position: relative; transition: background .2s;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--paper-dim); transition: transform .2s, background .2s;
+  }
+  .switch input:checked + .track { background: rgba(87,217,106,0.35); }
+  .switch input:checked + .track::after { transform: translateX(18px); background: var(--bull); }
+  .switch span.lbl {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--paper-dim);
+  }
+
+  /* prompt editor */
+  details.prompt { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+  details.prompt summary {
+    cursor: pointer; list-style: none; display: flex; align-items: center;
+    justify-content: space-between; font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber);
+  }
+  details.prompt summary::-webkit-details-marker { display: none; }
+  details.prompt summary .chev { transition: transform .2s; }
+  details.prompt[open] summary .chev { transform: rotate(90deg); }
+  .prompt-body { margin-top: 12px; }
+  textarea#prompt {
+    width: 100%; min-height: 110px; resize: vertical;
+    background: var(--ink); border: 1px solid var(--line); border-radius: 3px;
+    color: var(--paper-dim); font-family: var(--mono); font-size: 13px;
+    line-height: 1.6; padding: 13px 15px; outline: none;
+  }
+  textarea#prompt:focus { border-color: var(--amber); color: var(--paper); }
+  .prompt-meta {
+    display: flex; justify-content: space-between; margin-top: 8px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .prompt-meta button {
+    background: none; border: none; color: var(--amber); cursor: pointer;
+    font: inherit; letter-spacing: 0.16em; text-transform: uppercase;
+    border-bottom: 1px solid transparent; padding: 0;
+  }
+  .prompt-meta button:hover { border-bottom-color: var(--amber); }
+
+  /* ---------- status ---------- */
+  #status { margin-top: 30px; }
+  .working {
+    display: flex; align-items: center; gap: 16px;
+    border: 1px solid var(--line); border-left: 3px solid var(--amber);
+    background: var(--surface); padding: 18px 22px; border-radius: 3px;
+  }
+  .working .spin {
+    width: 18px; height: 18px; border: 2px solid var(--line);
+    border-top-color: var(--amber); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .working .txt { font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; color: var(--paper-dim); }
+  .working .txt b { color: var(--paper); }
+  .err {
+    border: 1px solid rgba(240,88,74,0.4); border-left: 3px solid var(--bear);
+    background: rgba(240,88,74,0.08); color: #ffb3ab;
+    padding: 16px 22px; border-radius: 3px; font-family: var(--mono); font-size: 13px;
+  }
+
+  /* ---------- report ---------- */
+  #report { margin-top: 38px; }
+  .reveal { animation: rise .5s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  .rpt-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 16px;
+  }
+  .rpt-head .co { font-family: var(--serif); }
+  .rpt-head .tk {
+    font-family: var(--mono); font-weight: 600; font-size: 14px;
+    letter-spacing: 0.2em; color: var(--amber);
+  }
+  .rpt-head h2 { margin: 4px 0 0; font-size: clamp(30px,5vw,46px); font-weight: 600; letter-spacing: -0.02em; }
+  .rpt-head .stamp {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+    color: var(--muted); text-align: right; text-transform: uppercase; line-height: 1.8;
+  }
+
+  section.block { margin-top: 34px; }
+  .block-title {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .block-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* impact hero */
+  .impact {
+    background: linear-gradient(180deg, var(--surface), var(--ink-2));
+    border: 1px solid var(--line); border-radius: 4px; padding: 28px;
+    position: relative; overflow: hidden;
+  }
+  .impact .verdict { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  .sentiment {
+    font-family: var(--serif); font-weight: 900; font-size: clamp(40px,7vw,68px);
+    letter-spacing: -0.02em; line-height: 1; text-transform: lowercase;
+  }
+  .score-num { font-family: var(--mono); font-size: 22px; font-weight: 600; }
+  .meter { margin: 22px 0 6px; }
+  .meter .scale {
+    position: relative; height: 8px; border-radius: 8px;
+    background: linear-gradient(90deg, rgba(240,88,74,0.5), rgba(224,168,41,0.4), rgba(87,217,106,0.5));
+    border: 1px solid var(--line);
+  }
+  .meter .mid { position: absolute; top: -5px; bottom: -5px; left: 50%; width: 1px; background: var(--muted); }
+  .meter .needle {
+    position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%;
+    transform: translate(-50%,-50%); border: 3px solid var(--ink);
+    box-shadow: 0 0 0 1px currentColor, 0 0 14px currentColor;
+    transition: left .9s cubic-bezier(.2,.7,.3,1);
+  }
+  .meter .ends {
+    display: flex; justify-content: space-between; margin-top: 8px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; color: var(--muted);
+  }
+  .impact .summary { font-size: 19px; line-height: 1.6; margin-top: 18px; color: var(--paper); max-width: 70ch; }
+
+  /* drivers */
+  .drivers { display: grid; gap: 12px; }
+  .driver {
+    border: 1px solid var(--line); border-left: 3px solid var(--line);
+    background: var(--surface); border-radius: 3px; padding: 15px 18px;
+  }
+  .driver.mag-high { border-left-color: var(--bear); }
+  .driver.mag-medium { border-left-color: var(--neutral); }
+  .driver.mag-low { border-left-color: var(--muted); }
+  .driver .d-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .driver .d-head { font-family: var(--serif); font-weight: 600; font-size: 19px; }
+  .driver .d-eff { color: var(--paper-dim); margin-top: 5px; }
+  .tag {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 2px; white-space: nowrap;
+  }
+  .tag.mag-high { background: rgba(240,88,74,0.15); color: var(--bear); }
+  .tag.mag-medium { background: rgba(224,168,41,0.15); color: var(--neutral); }
+  .tag.mag-low { background: rgba(125,132,120,0.18); color: var(--paper-dim); }
+  .tag.entity { background: rgba(212,167,44,0.12); color: var(--amber); }
+
+  /* entities */
+  .ent-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+  @media (max-width: 680px) { .ent-cols { grid-template-columns: 1fr; } }
+  .ent-cols h4 { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--paper-dim); margin: 0 0 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 9px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--surface); border-radius: 2px;
+    padding: 7px 12px; font-family: var(--mono); font-size: 13px; color: var(--paper);
+  }
+  .chip small { color: var(--muted); display: block; font-size: 11px; margin-top: 2px; font-family: var(--body); }
+  .empty { color: var(--muted); font-style: italic; }
+
+  /* news */
+  .news { display: grid; gap: 0; }
+  .news article {
+    padding: 18px 0; border-bottom: 1px solid var(--line); display: grid;
+    grid-template-columns: 130px 1fr; gap: 22px;
+  }
+  @media (max-width: 680px) { .news article { grid-template-columns: 1fr; gap: 8px; } }
+  .news .meta { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .news .meta .src { color: var(--amber); text-transform: uppercase; letter-spacing: 0.14em; }
+  .news .meta .date { display: block; margin-top: 4px; }
+  .news h3 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 21px; line-height: 1.25; }
+  .news h3 a { color: var(--paper); text-decoration: none; background-image: linear-gradient(var(--amber),var(--amber)); background-size: 0% 1px; background-repeat: no-repeat; background-position: 0 100%; transition: background-size .25s; }
+  .news h3 a:hover { background-size: 100% 1px; color: var(--amber); }
+  .news .hl { color: var(--paper-dim); font-size: 15px; margin-top: 7px; line-height: 1.5; }
+
+  /* citations */
+  .cites { display: grid; gap: 8px; }
+  .cite {
+    display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12px; padding: 9px 0; border-bottom: 1px dotted var(--line);
+  }
+  .cite .field { color: var(--amber); min-width: 130px; }
+  .cite a { color: var(--paper-dim); text-decoration: none; word-break: break-all; }
+  .cite a:hover { color: var(--paper); }
+  .cite .conf { margin-left: auto; letter-spacing: 0.14em; text-transform: uppercase; }
+  .conf.high { color: var(--bull); } .conf.medium { color: var(--neutral); } .conf.low { color: var(--bear); } .conf.unknown { color: var(--muted); }
+
+  footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="kicker">
+      <span>The Impact Desk · Equity Intelligence</span>
+      <span class="live">Exa wire · live</span>
+    </div>
+    <h1 class="title">Fin<span class="ave">agent</span></h1>
+    <p class="dek">Name a ticker. We read the wires on the company, its subsidiaries and its rivals — then weigh how the last cycle of news moves the stock.</p>
+  </header>
+
+  <div class="desk">
+    <div class="desk-label">New enquiry</div>
+    <div class="ticker-row">
+      <div class="ticker-field">
+        <span class="hash">$</span>
+        <input id="ticker" type="text" placeholder="AAPL" autocomplete="off" spellcheck="false" maxlength="12" />
+      </div>
+      <button id="run">Analyze</button>
+    </div>
+
+    <div class="controls">
+      <div class="ctl">
+        <label for="recency">Recency · hrs</label>
+        <input id="recency" type="number" min="1" max="2160" value="24" />
+      </div>
+      <div class="ctl">
+        <label for="num">Results / entity</label>
+        <input id="num" type="number" min="1" max="25" value="10" />
+      </div>
+      <div class="ctl">
+        <label>Coverage</label>
+        <div class="toggles">
+          <label class="switch">
+            <input type="checkbox" id="subs" checked />
+            <span class="track"></span><span class="lbl">Subs</span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="comps" checked />
+            <span class="track"></span><span class="lbl">Rivals</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <details class="prompt">
+      <summary><span>⌁ Analyst system prompt — editable</span><span class="chev">›</span></summary>
+      <div class="prompt-body">
+        <textarea id="prompt" spellcheck="false">{{ default_prompt }}</textarea>
+        <div class="prompt-meta">
+          <span>Frames how Exa synthesizes the impact verdict</span>
+          <button type="button" id="reset-prompt">↺ Reset to default</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div id="status"></div>
+  <div id="report"></div>
+
+  <footer>
+    <span>FINAGENT · local desk</span>
+    <span>powered by exa · deep search + grounding</span>
+  </footer>
+</div>
+
+<script>
+  const DEFAULT_PROMPT = document.getElementById("prompt").value;
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status");
+  const reportEl = $("report");
+
+  $("reset-prompt").addEventListener("click", () => { $("prompt").value = DEFAULT_PROMPT; });
+  $("ticker").addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+  $("run").addEventListener("click", run);
+
+  const esc = (s) => (s == null ? "" : String(s).replace(/[&<>"']/g, c => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])));
+
+  function fmtStamp(iso) {
+    if (!iso) return "";
+    try { return new Date(iso).toUTCString().replace("GMT","UTC"); } catch { return iso; }
+  }
+
+  let timer = null;
+  function startTimer() {
+    let t = 0;
+    const el = $("elapsed");
+    timer = setInterval(() => { t++; if (el) el.textContent = t + "s"; }, 1000);
+  }
+  function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+
+  async function run() {
+    const ticker = $("ticker").value.trim();
+    if (!ticker) { $("ticker").focus(); return; }
+
+    $("run").disabled = true;
+    reportEl.innerHTML = "";
+    statusEl.innerHTML = `
+      <div class="working">
+        <div class="spin"></div>
+        <div class="txt">Reading the wires on <b>${esc(ticker.toUpperCase())}</b> — deep synthesis can take 15–40s · <span id="elapsed">0s</span></div>
+      </div>`;
+    startTimer();
+
+    const payload = {
+      ticker,
+      recency_hours: Number($("recency").value) || 24,
+      num_results: Number($("num").value) || 10,
+      include_subsidiaries: $("subs").checked,
+      include_competitors: $("comps").checked,
+      system_prompt: $("prompt").value,
+    };
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      stopTimer();
+      statusEl.innerHTML = "";
+      if (!res.ok) {
+        statusEl.innerHTML = `<div class="err">⚠ ${esc(data.error || ("HTTP " + res.status))}</div>`;
+      } else {
+        render(data);
+      }
+    } catch (e) {
+      stopTimer();
+      statusEl.innerHTML = `<div class="err">⚠ ${esc(e.message || e)}</div>`;
+    } finally {
+      $("run").disabled = false;
+    }
+  }
+
+  function render(d) {
+    const imp = d.impact || {};
+    const score = typeof imp.score === "number" ? imp.score : 0;
+    const pct = ((score + 1) / 2) * 100;
+    const color = imp.sentiment === "bullish" ? "var(--bull)"
+      : imp.sentiment === "bearish" ? "var(--bear)" : "var(--neutral)";
+
+    const drivers = (imp.drivers || []).map(dr => `
+      <div class="driver mag-${esc(dr.magnitude)}">
+        <div class="d-top">
+          <div class="d-head">${esc(dr.headline)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${dr.related_entity ? `<span class="tag entity">${esc(dr.related_entity)}</span>` : ""}
+            <span class="tag mag-${esc(dr.magnitude)}">${esc(dr.magnitude)} impact</span>
+          </div>
+        </div>
+        ${dr.effect ? `<div class="d-eff">${esc(dr.effect)}</div>` : ""}
+      </div>`).join("");
+
+    const chip = (e) => `<div class="chip">${esc(e.name)}${e.description ? `<small>${esc(e.description)}</small>` : ""}</div>`;
+    const subs = (d.entities?.subsidiaries || []);
+    const comps = (d.entities?.competitors || []);
+
+    const news = (d.news_items || []).map(n => `
+      <article>
+        <div class="meta">
+          <span class="src">${esc(n.source_entity)}</span>
+          ${n.published_date ? `<span class="date">${esc(n.published_date)}</span>` : ""}
+        </div>
+        <div>
+          <h3><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a></h3>
+          ${(n.highlights || []).slice(0,2).map(h => `<div class="hl">“${esc(h)}”</div>`).join("")}
+        </div>
+      </article>`).join("");
+
+    const cites = (d.citations || []).map(c => `
+      <div class="cite">
+        <span class="field">${esc(c.field)}</span>
+        <a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title || c.url)}</a>
+        <span class="conf ${esc(c.confidence)}">${esc(c.confidence)}</span>
+      </div>`).join("");
+
+    reportEl.innerHTML = `
+      <div class="reveal">
+        <div class="rpt-head">
+          <div class="co">
+            <div class="tk">$${esc(d.ticker)}</div>
+            <h2>${esc(d.company_name || d.ticker)}</h2>
+          </div>
+          <div class="stamp">
+            as of ${esc(fmtStamp(d.as_of))}<br/>
+            window · last ${esc(d.recency_hours)}h · ${ (d.news_items||[]).length } items
+          </div>
+        </div>
+
+        <section class="block">
+          <div class="block-title">Impact verdict</div>
+          <div class="impact" style="color:${color}">
+            <div class="verdict">
+              <div class="sentiment">${esc(imp.sentiment || "—")}</div>
+              <div class="score-num">${score >= 0 ? "+" : ""}${score.toFixed(2)}</div>
+            </div>
+            <div class="meter">
+              <div class="scale">
+                <div class="mid"></div>
+                <div class="needle" style="left:${pct}%;color:${color}"></div>
+              </div>
+              <div class="ends"><span>−1.0 bearish</span><span>neutral</span><span>bullish +1.0</span></div>
+            </div>
+            <p class="summary" style="color:var(--paper)">${esc(imp.summary || "")}</p>
+          </div>
+        </section>
+
+        ${drivers ? `<section class="block"><div class="block-title">Impact drivers</div><div class="drivers">${drivers}</div></section>` : ""}
+
+        <section class="block">
+          <div class="block-title">Coverage map</div>
+          <div class="ent-cols">
+            <div>
+              <h4>Subsidiaries</h4>
+              <div class="chips">${subs.length ? subs.map(chip).join("") : `<span class="empty">none discovered</span>`}</div>
+            </div>
+            <div>
+              <h4>Competitors</h4>
+              <div class="chips">${comps.length ? comps.map(chip).join("") : `<span class="empty">none discovered</span>`}</div>
+            </div>
+          </div>
+        </section>
+
+        ${news ? `<section class="block"><div class="block-title">The wire · ${(d.news_items||[]).length} stories</div><div class="news">${news}</div></section>`
+               : `<section class="block"><div class="block-title">The wire</div><p class="empty">No news surfaced in this window — try widening recency.</p></section>`}
+
+        ${cites ? `<section class="block"><div class="block-title">Grounding · sources</div><div class="cites">${cites}</div></section>` : ""}
+      </div>`;
+  }
+</script>
+</body>
+</html>
