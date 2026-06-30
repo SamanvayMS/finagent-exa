@@ -9,6 +9,13 @@ from .models import (
     NewsItem,
     TickerAnalysis,
 )
+from .tool import (
+    TOOL_DESCRIPTION,
+    TOOL_NAME,
+    TOOL_PARAMETERS,
+    build_tool_spec,
+    run_tool,
+)
 
 __all__ = [
     "analyze_ticker",
@@ -19,4 +26,9 @@ __all__ = [
     "Impact",
     "ImpactDriver",
     "Citation",
+    "build_tool_spec",
+    "run_tool",
+    "TOOL_NAME",
+    "TOOL_DESCRIPTION",
+    "TOOL_PARAMETERS",
 ]
