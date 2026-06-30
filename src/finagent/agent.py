@@ -18,6 +18,7 @@ def analyze_ticker(
     num_results: int = DEFAULT_NUM_RESULTS,
     include_subsidiaries: bool = True,
     include_competitors: bool = True,
+    system_prompt: str | None = None,
     api_key: str | None = None,
     now_iso: str | None = None,
     client: ExaClient | None = None,
@@ -44,7 +45,9 @@ def analyze_ticker(
         num_results=num_results,
     )
 
-    impact, citations = synthesize_impact(client, ticker, company_name, news_items)
+    impact, citations = synthesize_impact(
+        client, ticker, company_name, news_items, system_prompt=system_prompt
+    )
 
     return TickerAnalysis(
         ticker=ticker,

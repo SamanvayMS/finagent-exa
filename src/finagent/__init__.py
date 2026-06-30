@@ -1,5 +1,6 @@
 """finagent — ticker impact-analysis tool library powered by Exa."""
 from .agent import analyze_ticker
+from .analysis import IMPACT_SYSTEM_PROMPT
 from .models import (
     Citation,
     Entities,
@@ -19,6 +20,7 @@ from .tool import (
 
 __all__ = [
     "analyze_ticker",
+    "IMPACT_SYSTEM_PROMPT",
     "TickerAnalysis",
     "Entity",
     "Entities",
