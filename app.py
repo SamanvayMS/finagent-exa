@@ -8,10 +8,14 @@ Then open http://127.0.0.1:5000
 """
 from __future__ import annotations
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
 from finagent import IMPACT_SYSTEM_PROMPT, analyze_ticker
 from finagent.config import FinAgentError
+
+# Load EXA_API_KEY from a local .env before any request is served.
+load_dotenv()
 
 app = Flask(__name__)
 

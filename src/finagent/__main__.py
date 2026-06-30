@@ -9,6 +9,11 @@ from .config import FinAgentError
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Load EXA_API_KEY (and friends) from a local .env if present.
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         prog="finagent",
         description="Analyze recent-news impact for a stock ticker via Exa.",
