@@ -2,6 +2,8 @@
 name = "finagent"
 version = "0.1.0"
 description = "Ticker impact-analysis tool library powered by Exa web search"
+readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.12"
 dependencies = [
     "exa-py==2.14.0",
